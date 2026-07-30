@@ -1,0 +1,11 @@
+fastapi==0.100.0
+uvicorn==0.23.0
+pydantic==1.10.26
+pytest==7.4.0
+pytest-asyncio==0.21.1
+httpx==0.25.0
+PyJWT==2.8.0
+python-dotenv==1.0.1
+# BigQuery dependencies: See requirements-prod.txt for production deployment
+# On Windows/MSYS2, these cause gRPC compilation errors during local dev
+# The app gracefully falls back to in-memory storage when unavailable

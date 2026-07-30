@@ -1,0 +1,55 @@
+services:
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY in .env}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+      # BigQuery Migration Configuration (Phase 1-6)
+      - BIGQUERY_PROJECT_ID=${BIGQUERY_PROJECT_ID:-}
+      - BIGQUERY_DATASET_ID=${BIGQUERY_DATASET_ID:-first_aid_ai_module1}
+      - BIGQUERY_CREDENTIALS_PATH=/app/credentials.json
+      - BIGQUERY_WRITE_ENABLED=${BIGQUERY_WRITE_ENABLED:-false}
+      - BIGQUERY_READ_SOURCE=${BIGQUERY_READ_SOURCE:-bigquery}
+      - BIGQUERY_BACKFILL_WATERMARK=${BIGQUERY_BACKFILL_WATERMARK:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ${BIGQUERY_CREDENTIALS_PATH:-/dev/null}:/app/credentials.json:ro
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health').read()\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  redis_data:

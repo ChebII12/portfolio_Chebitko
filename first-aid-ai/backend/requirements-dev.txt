@@ -1,0 +1,15 @@
+# For local development on Windows (without BigQuery compilation)
+fastapi==0.100.0
+uvicorn==0.23.0
+pydantic==1.10.26
+pytest==7.4.0
+pytest-asyncio==0.21.1
+httpx==0.25.0
+PyJWT==2.8.0
+python-dotenv==1.0.1
+
+# Optional: Uncomment on Linux/Mac or when using Docker
+# google-cloud-bigquery==3.12.0
+# google-cloud-bigquery-storage==2.20.0
+# google-auth==2.23.0
+

@@ -1,0 +1,113 @@
+services:
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+    volumes:
+      - redis_data:/data
+    networks:
+      - firstaidai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY in .env}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:?Set CORS_ORIGINS in .env}
+      - LOG_LEVEL=INFO
+      - BIGQUERY_PROJECT_ID=${BIGQUERY_PROJECT_ID:?Set BIGQUERY_PROJECT_ID in .env}
+      - BIGQUERY_DATASET_ID=${BIGQUERY_DATASET_ID:-first_aid_ai_module1}
+      - BIGQUERY_CREDENTIALS_PATH=/app/credentials.json
+      - BIGQUERY_WRITE_ENABLED=${BIGQUERY_WRITE_ENABLED:-true}
+      - BIGQUERY_READ_SOURCE=${BIGQUERY_READ_SOURCE:-bigquery}
+      - BIGQUERY_BACKFILL_WATERMARK=${BIGQUERY_BACKFILL_WATERMARK:-}
+    volumes:
+      - ${BIGQUERY_CREDENTIALS_PATH:?Set BIGQUERY_CREDENTIALS_PATH in .env}:/app/credentials.json:ro
+    networks:
+      - firstaidai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    networks:
+      - firstaidai-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/ssl/certs:ro
+    networks:
+      - firstaidai-network
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+
+  # Monitoring (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - firstaidai-network
+    restart: unless-stopped
+
+  # Grafana for dashboards
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:?Set GRAFANA_PASSWORD in .env}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - firstaidai-network
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  firstaidai-network:
+    driver: bridge
