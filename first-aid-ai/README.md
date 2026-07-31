@@ -37,6 +37,24 @@ Modules for symptom analysis, camera analysis, nearby clinics, travel risk, and 
 | Testing | pytest, Vitest, React Testing Library |
 | Deployment | Docker Compose, Nginx, ngrok-compatible local demo |
 
+## Project material
+
+- [API documentation](./docs/API_DOCUMENTATION.md)
+- [Environment configuration](./docs/ENV_CONFIGURATION.md)
+- [Module 1 presentation — English](./docs/first-aid-ai-module-1-english.pptx)
+
+## Repository structure
+
+```text
+first-aid-ai/
+├── backend/      FastAPI application, schemas, services, and tests
+├── frontend/     Responsive React application and component tests
+├── docs/         API, environment, and presentation material
+├── monitoring/   Prometheus and Grafana configuration
+├── nginx/        Reverse-proxy configuration
+└── scripts/      Deployment and rollback helpers
+```
+
 ## Run locally
 
 ### Backend
@@ -80,21 +98,4 @@ npm run build
 For BigQuery support, install `backend/requirements-prod.txt` and set the `BIGQUERY_*` values described in [`backend/.env.example`](./backend/.env.example). Add a Groq key only if AI-based classification is required; local classification remains available without it.
 
 Never commit `.env` files or service-account credentials. The repository ignores local environment files, credential JSON, virtual environments, generated builds, and dependency folders.
-Environment-specific cloud-console screenshots and presentation metadata are intentionally excluded from this public portfolio copy.
-
-## Project material
-
-- [API documentation](./docs/API_DOCUMENTATION.md)
-- [Environment configuration](./docs/ENV_CONFIGURATION.md)
-
-## Repository structure
-
-```text
-first-aid-ai/
-├── backend/      FastAPI application, schemas, services, and tests
-├── frontend/     Responsive React application and component tests
-├── docs/         API and environment reference
-├── monitoring/   Prometheus and Grafana configuration
-├── nginx/        Reverse-proxy configuration
-└── scripts/      Deployment and rollback helpers
-```
+The included presentation uses sanitized cloud-console screenshots and generic document metadata.
